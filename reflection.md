@@ -5,7 +5,46 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+   PawPal+ should have cores action of adding a pet,  assigning a speficif task such as grooming, time schedule
 - What classes did you include, and what responsibilities did you assign to each?
+    The classes are Owner, Pet, and Task.
+    Owner
+        Attributes:
+            Name
+            Email
+            Phone number
+        Responsibilities:
+            Own one or more pets
+            View and manage pet tasks
+    Pet
+        Attributes:
+            Name
+            Age
+             Sex
+            Species (Dog, Cat, Bird, etc.)
+            Breed
+            Weight (optional)
+        Responsibilities:
+            Belongs to an owner
+            Has multiple care tasks
+    Task
+        Attributes:
+            Task name (e.g., Feed, Walk, Groom)
+            Date
+            Time
+            Status (Pending/Completed)
+            Notes (optional)
+        Responsibilities:
+            Assigned to a pet
+            Can be marked as completed
+    Reminder
+        Attributes:
+            Reminder date and time
+            Notification message
+            Repeat frequency (Daily, Weekly, Monthly)
+        Responsibilities:
+            Linked to a task
+        Sends reminders to the owner
 
 **b. Design changes**
 

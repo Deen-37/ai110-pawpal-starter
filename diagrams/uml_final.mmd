@@ -1,0 +1,64 @@
+classDiagram
+    %% PawPal+ FINAL class diagram
+    %% Reflects the implemented code in pawpal_system.py:
+    %% added time/frequency + recurrence on Task, and
+    %% sort/filter/conflict/complete features on Scheduler.
+
+    class Owner {
+        +string name
+        +string email
+        +int available_minutes
+        +list~Pet~ pets
+        +list~Task~ tasks
+        +add_pet(Pet pet) void
+        +add_task(Task task) void
+        +remove_task(string task_title) void
+        +get_tasks() list~Task~
+    }
+
+    class Pet {
+        +string name
+        +string species
+        +int age
+        +list~Task~ care_tasks
+        +add_task(Task task) void
+        +get_profile() string
+    }
+
+    class Task {
+        +string title
+        +int duration_minutes
+        +string priority
+        +string time
+        +string frequency
+        +bool is_required
+        +bool completed
+        +Pet pet
+        +assign_to_pet(Pet pet) void
+        +mark_complete() void
+        +is_recurring() bool
+        +next_occurrence() Task
+        +priority_score() int
+        +get_summary() string
+    }
+
+    class Scheduler {
+        +list~Task~ scheduled_tasks
+        +list~Task~ skipped_tasks
+        +generate_plan(Owner owner) list~Task~
+        +sort_tasks_by_priority(list~Task~ tasks) list~Task~
+        +sort_by_time(list~Task~ tasks) list~Task~
+        +filter_tasks(list~Task~ tasks, bool completed, string pet_name) list~Task~
+        +detect_conflicts(list~Task~ tasks) list~string~
+        +complete_task(Owner owner, Task task) Task
+        +explain_plan(list~Task~ plan) string
+    }
+
+    Owner "1" --> "1..*" Pet : cares for
+    Owner "1" --> "0..*" Task : creates
+    Pet "1" --> "0..*" Task : needs
+    Task "0..*" --> "0..1" Pet : assigned to
+    Task ..> Task : next_occurrence creates
+    Scheduler --> Owner : plans for
+    Scheduler --> Pet : registers recurring tasks
+    Scheduler --> Task : sorts, filters, checks conflicts

@@ -65,7 +65,7 @@
 - Describe one tradeoff your scheduler makes.
 
   The `detect_conflicts` method only flags tasks that share the exact same
-  `"HH:MM"` start time. It does **not** account for overlapping durations. For
+  `"HH:MM"` start time. It does no account for overlapping durations. For
   example, a 30-minute "Vet check-up" starting at 13:00 and a "Brush Luna"
   starting at 13:15 actually overlap in real life, but the scheduler stays
   silent because their start strings differ. Detection is a simple
@@ -90,12 +90,67 @@
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+
+  I used the AI assistant across the whole build: brainstorming the class
+  responsibilities, writing each `Scheduler` method incrementally, generating the
+  pytest cases, and keeping the docs (README, UML, this reflection) in sync with
+  the code. Most work was done one feature at a time — sorting, then filtering,
+  then recurrence, then conflict detection — so each change was small enough to
+  read and verify before moving on.
+
 - What kinds of prompts or questions were most helpful?
+
+  Narrow, single-responsibility prompts worked best: "add a `sort_by_time`
+  method that sorts `HH:MM` strings" produced cleaner results than a vague "make
+  the scheduler smarter." Asking *conceptual* questions first ("how does a lambda
+  `key` work?") before asking for code helped me actually understand the output
+  instead of pasting it blindly.
+
+  **Most effective AI features:**
+  - **Reading my existing file for context** — the assistant matched the house
+    style (list comprehensions, type hints, docstrings) because it could see
+    `sort_tasks_by_priority` before writing `sort_by_time`.
+  - **Running code in the terminal to verify** — instead of claiming a method
+    worked, it executed `main.py` / `pytest` and showed real output, which caught
+    behavior I could see for myself.
+  - **Multi-file edits in one step** — the recurrence feature touched `Task`,
+    `Scheduler`, and `main.py` together, keeping them consistent.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+
+  Two examples. First, when adding recurrence the natural first idea was to put
+  the "create the next occurrence" logic directly inside `Task.mark_complete()`.
+  I rejected that because a `Task` has no reference to the `Owner`, so it
+  couldn't register the new instance on the owner's list — it would have needed a
+  messy back-reference. Instead we split the responsibility: `Task.next_occurrence()`
+  knows *how* to copy itself, and `Scheduler.complete_task()` knows *where* to
+  register the copy (owner + pet). That kept `Task` self-contained and the design
+  clean. Second, I was offered an upgrade from exact-time conflict checks to full
+  interval-overlap detection and chose to keep the lightweight version (see 2b)
+  because it matched the scope of the project.
+
 - How did you evaluate or verify what the AI suggested?
+
+  I verified by running, not just reading. Every feature was exercised through
+  `main.py` (deliberately adding tasks out of order and at clashing times) and
+  through the pytest suite, and I checked the printed output matched what I
+  expected — e.g. confirming a non-padded `"9:00"` sorted correctly and that the
+  "incomplete tasks for Mochi" filter returned empty once his tasks were done.
+
+**c. Working across phases**
+
+- How did using separate chat sessions for different phases help you stay organized?
+
+  Splitting the work into phase-focused sessions (design/UML → implementation →
+  testing → documentation) kept each conversation's context tight. A session that
+  was only about the scheduling algorithms didn't get cluttered with UI or README
+  chatter, so the assistant's suggestions stayed on-topic and I could find past
+  decisions again easily. It also created a natural checkpoint between phases: I
+  finished and verified one concern before opening the next, which made it obvious
+  when the UML diagram had drifted from the final code and needed a `uml_final.mmd`
+  update.
 
 ---
 

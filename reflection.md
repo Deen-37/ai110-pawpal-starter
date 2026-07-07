@@ -63,7 +63,25 @@
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+
+  The `detect_conflicts` method only flags tasks that share the exact same
+  `"HH:MM"` start time. It does **not** account for overlapping durations. For
+  example, a 30-minute "Vet check-up" starting at 13:00 and a "Brush Luna"
+  starting at 13:15 actually overlap in real life, but the scheduler stays
+  silent because their start strings differ. Detection is a simple
+  group-by-start-time check rather than an interval-overlap comparison that
+  would use each task's `duration_minutes`.
+
 - Why is that tradeoff reasonable for this scenario?
+
+  The goal was a *lightweight* warning that never crashes the program, not a
+  full calendar solver. Grouping by start time is easy to read, runs in a
+  single pass, and needs no time math, so it is easy to trust and to extend
+  later. For a personal pet-care planner with only a handful of daily tasks,
+  identical start times catch the most obvious double-bookings, and the cost of
+  a missed partial overlap is low (a person can eyeball the printed schedule).
+  If the tool ever managed back-to-back professional grooming appointments, the
+  extra complexity of true interval-overlap detection would then be worth it.
 
 ---
 

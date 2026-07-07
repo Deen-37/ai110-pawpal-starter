@@ -1,5 +1,7 @@
 import streamlit as st
 
+from pawpal_system import Owner, Pet, Task, Scheduler
+
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
 st.title("🐾 PawPal+")
@@ -38,16 +40,46 @@ At minimum, your system should:
 
 st.divider()
 
-st.subheader("Quick Demo Inputs (UI only)")
+st.subheader("Owner")
 owner_name = st.text_input("Owner name", value="Jordan")
-pet_name = st.text_input("Pet name", value="Mochi")
-species = st.selectbox("Species", ["dog", "cat", "other"])
+available_minutes = st.number_input(
+    "Available minutes today", min_value=0, max_value=1440, value=60
+)
 
-st.markdown("### Tasks")
-st.caption("Add a few tasks. In your final version, these should feed into your scheduler.")
+# Create the Owner once and keep it in the session vault so pets/tasks
+# persist across Streamlit re-runs. Keep name/availability in sync each run.
+if "owner" not in st.session_state:
+    st.session_state.owner = Owner(name=owner_name, email="owner@example.com")
 
-if "tasks" not in st.session_state:
-    st.session_state.tasks = []
+owner = st.session_state.owner
+owner.name = owner_name
+owner.available_minutes = int(available_minutes)
+
+st.divider()
+
+st.subheader("Add a Pet")
+col_p1, col_p2, col_p3 = st.columns(3)
+with col_p1:
+    pet_name = st.text_input("Pet name", value="Mochi")
+with col_p2:
+    species = st.selectbox("Species", ["dog", "cat", "other"])
+with col_p3:
+    pet_age = st.number_input("Age", min_value=0, max_value=40, value=2)
+
+if st.button("Add pet"):
+    owner.add_pet(Pet(name=pet_name, species=species, age=int(pet_age)))
+
+if owner.pets:
+    st.write("Current pets:")
+    for pet in owner.pets:
+        st.markdown(f"- {pet.get_profile()}")
+else:
+    st.info("No pets yet. Add one above.")
+
+st.divider()
+
+st.subheader("Add a Task")
+st.caption("Tasks feed into your scheduler below.")
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -57,32 +89,48 @@ with col2:
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 
-if st.button("Add task"):
-    st.session_state.tasks.append(
-        {"title": task_title, "duration_minutes": int(duration), "priority": priority}
-    )
+# Optionally attach the task to one of the owner's pets.
+pet_choices = ["(none)"] + [pet.name for pet in owner.pets]
+assigned_pet = st.selectbox("Assign to pet", pet_choices)
 
-if st.session_state.tasks:
+if st.button("Add task"):
+    task = Task(title=task_title, duration_minutes=int(duration), priority=priority)
+    if assigned_pet != "(none)":
+        pet = next(p for p in owner.pets if p.name == assigned_pet)
+        pet.add_task(task)  # links task <-> pet
+    owner.add_task(task)
+
+if owner.get_tasks():
     st.write("Current tasks:")
-    st.table(st.session_state.tasks)
+    st.table(
+        [
+            {
+                "title": task.title,
+                "duration_minutes": task.duration_minutes,
+                "priority": task.priority,
+                "pet": task.pet.name if task.pet else "-",
+            }
+            for task in owner.get_tasks()
+        ]
+    )
 else:
     st.info("No tasks yet. Add one above.")
 
 st.divider()
 
 st.subheader("Build Schedule")
-st.caption("This button should call your scheduling logic once you implement it.")
+st.caption("Runs your Scheduler against the tasks above, within the owner's available time.")
 
 if st.button("Generate schedule"):
-    st.warning(
-        "Not implemented yet. Next step: create your scheduling logic (classes/functions) and call it here."
-    )
-    st.markdown(
-        """
-Suggested approach:
-1. Design your UML (draft).
-2. Create class stubs (no logic).
-3. Implement scheduling behavior.
-4. Connect your scheduler here and display results.
-"""
-    )
+    scheduler = Scheduler()
+    plan = scheduler.generate_plan(owner)
+
+    st.markdown("#### Plan")
+    if plan:
+        st.text(scheduler.explain_plan(plan))
+    else:
+        st.warning("No tasks fit within the available time.")
+
+    if scheduler.skipped_tasks:
+        st.markdown("#### Skipped (not enough time)")
+        st.text("\n".join(task.get_summary() for task in scheduler.skipped_tasks))

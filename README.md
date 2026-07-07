@@ -74,14 +74,57 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+Beyond the base plan generator, PawPal+ adds several scheduling behaviors. Each
+is implemented as a method on the `Scheduler` class (with supporting fields on
+`Task`) in `pawpal_system.py`.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Priority sorting | `Scheduler.sort_tasks_by_priority()` | Highest priority first (high=3, medium=2, low=1) |
+| Time sorting | `Scheduler.sort_by_time()` | Earliest scheduled `time` first |
+| Filtering | `Scheduler.filter_tasks()` | By completion status and/or pet name |
+| Conflict detection | `Scheduler.detect_conflicts()` | Warns on tasks sharing a start time |
+| Recurring tasks | `Scheduler.complete_task()`, `Task.next_occurrence()`, `Task.is_recurring()` | Daily/weekly tasks respawn on completion |
+
+### Sorting behavior
+
+- **`Scheduler.sort_by_time(tasks)`** returns the tasks ordered from earliest to
+  latest. Each task's `"HH:MM"` `time` is converted to minutes-since-midnight
+  before comparing, so non-zero-padded hours (e.g. `"9:00"`) still sort
+  correctly.
+- **`Scheduler.sort_tasks_by_priority(tasks)`** (original) orders tasks from
+  highest to lowest priority using `Task.priority_score()`.
+
+Both return new lists via Python's `sorted()` and leave the input untouched.
+
+### Filtering behavior
+
+- **`Scheduler.filter_tasks(tasks, completed=None, pet_name=None)`** returns only
+  the tasks that match the given criteria. Both arguments are optional:
+  - `completed=True` / `completed=False` — keep only tasks with that status.
+  - `pet_name="Luna"` — keep only tasks assigned to that pet.
+  - Passing both requires *both* to match; omitting an argument leaves that
+    criterion unfiltered.
+
+### Conflict detection logic
+
+- **`Scheduler.detect_conflicts(tasks)`** is a lightweight check that groups
+  tasks by their `"HH:MM"` start time and returns a warning string for any slot
+  holding two or more tasks — whether they belong to the same pet or different
+  pets. It returns an empty list when there are no conflicts, so the caller can
+  print a warning **without the program crashing**. Note: it matches exact start
+  times only and does not account for overlapping `duration_minutes`.
+
+### Recurring task logic
+
+- **`Task.frequency`** (`"once"`, `"daily"`, or `"weekly"`) marks how a task
+  repeats, and **`Task.is_recurring()`** reports whether it repeats at all.
+- **`Task.next_occurrence()`** returns a fresh, uncompleted copy of a recurring
+  task for its next instance, or `None` for a one-off task.
+- **`Scheduler.complete_task(owner, task)`** marks a task complete and, if it
+  recurs, automatically creates the next occurrence and registers it on both the
+  owner's task list and the assigned pet's care tasks. It returns the new task
+  (or `None` if the task does not recur).
 
 ## 📸 Demo Walkthrough
 
